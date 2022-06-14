@@ -7,3 +7,5 @@ edition = "2021"
 
 [dependencies]
 bevy = "0.7"
+arabic_reshaper = "0.4.1"
+unicode-segmentation = "1.9.0"
