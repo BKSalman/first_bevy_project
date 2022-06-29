@@ -1,14 +1,30 @@
 #![allow(unused)]
 
-use bevy::{prelude::*, math::vec2, render::{texture, camera::ScalingMode}};
+use bevy::{prelude::*, diagnostic::FrameTimeDiagnosticsPlugin, diagnostic::LogDiagnosticsPlugin, render::{texture, camera::ScalingMode}};
 use arabic_reshaper::arabic_reshape;
 extern crate unicode_segmentation;
-
 use unicode_segmentation::UnicodeSegmentation;
+
+mod player;
+mod debug;
+mod sprite;
+
+use player::PlayerPlugin;
+use debug::DebugPlugin;
+use sprite::SpritePlugin;
+
+#[derive(Component)]
+struct AnimateTranslation;
+
+#[derive(Debug)]
+#[derive(Component)]
+struct ArabicText;
+
 
 pub const PLAYER_SPRITE: &str = "player.png";
 pub const PLAYER_SIZE: (f32, f32) = (112.0, 79.0);
 pub const RESOLUTION:f32 = 16.0 / 9.0;
+pub const TILE_SIZE: f32 = 0.1;
 
 fn main() {
     App::new()
@@ -24,18 +40,14 @@ fn main() {
     // .add_startup_system(setup)
     .add_startup_system(hot_reload)
     .add_startup_system(spawn_camera)
-    .add_startup_system(spawn_player)
-    .add_startup_system_to_stage(StartupStage::PreStartup, load_sprite)
-    // .add_system(animate_translation)
+    .add_plugin(PlayerPlugin)
+    .add_plugin(SpritePlugin)
+    .add_plugin(DebugPlugin)
+    // .add_plugin(LogDiagnosticsPlugin::default())
+    // .add_plugin(FrameTimeDiagnosticsPlugin::default())
     .run();
 }
 
-#[derive(Component)]
-struct AnimateTranslation;
-
-#[derive(Debug)]
-#[derive(Component)]
-struct ArabicText;
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     let font = asset_server.load("fonts/arial.ttf");
@@ -64,8 +76,6 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         ..Default::default()
         });
 
-    // spawn_camera(commands);
-    // spawn_player(commands);
 }
 
 fn hot_reload(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -83,40 +93,6 @@ fn spawn_camera (mut commands: Commands) {
     camera.orthographic_projection.left = -1.0 * RESOLUTION;
     
     commands.spawn_bundle(camera);
-}
-
-fn spawn_player(mut commands: Commands, sprite: Res<SpriteSheet>) {
-    let mut sprite1 = TextureAtlasSprite::new(0);
-    sprite1.custom_size = Some(Vec2::splat(1.0));
-    
-    commands.spawn_bundle(SpriteSheetBundle {
-        sprite: sprite1,
-        texture_atlas: sprite.0.clone(),
-        transform: Transform {
-            translation: Vec3::new(0.0, 0.0, 900.0),
-            ..Default::default()
-        },
-        ..Default::default()
-    }).insert(Name::new("Player"));
-}
-
-struct SpriteSheet(Handle<TextureAtlas>);
-
-fn load_sprite(
-    mut commands: Commands,
-    assets: Res<AssetServer>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>
-) {
-    let image = assets.load("first_sprite_sheet.png");
-    let atlas = TextureAtlas::from_grid_with_padding(
-        image,
-        Vec2::splat(17.0),
-        2,
-        1,
-        Vec2::splat(3.0)
-    );
-    let atlas_handle = texture_atlases.add(atlas);
-    commands.insert_resource(SpriteSheet(atlas_handle));
 }
 
 fn animate_translation(
